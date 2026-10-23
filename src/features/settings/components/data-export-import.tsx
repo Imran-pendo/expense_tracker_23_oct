@@ -30,6 +30,18 @@ export function DataExportImport() {
       const data = { workspace, transactions, categories, goals, budgets, exportedAt: new Date().toISOString() };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       downloadBlob(blob, `expense-tracker-export-${new Date().toISOString().slice(0, 10)}.json`);
+
+      // Pendo Track Event: data exported as JSON full backup
+      if (typeof pendo !== "undefined") {
+        pendo.track("data_exported", {
+          export_format: "json",
+          transaction_count: transactions.length,
+          category_count: categories.length,
+          goal_count: goals.length,
+          budget_count: budgets.length,
+        });
+      }
+
       toast.success("Exported successfully");
     } catch {
       toast.error("Export failed");
@@ -61,6 +73,18 @@ export function DataExportImport() {
       const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       downloadBlob(blob, `transactions-${new Date().toISOString().slice(0, 10)}.csv`);
+
+      // Pendo Track Event: data exported as CSV (transactions only)
+      if (typeof pendo !== "undefined") {
+        pendo.track("data_exported", {
+          export_format: "csv",
+          transaction_count: transactions.length,
+          category_count: categories.length,
+          goal_count: 0,
+          budget_count: 0,
+        });
+      }
+
       toast.success("CSV exported successfully");
     } catch {
       toast.error("CSV export failed");
@@ -98,7 +122,8 @@ export function DataExportImport() {
       }
 
       // Optional sections from newer exports; older files simply lack them.
-      let extras = 0;
+      let goalCount = 0;
+      let budgetCount = 0;
       if (Array.isArray(data.goals)) {
         for (const goal of data.goals) {
           await createGoal({
@@ -107,16 +132,28 @@ export function DataExportImport() {
             workspaceId: workspace.id,
             contributions: (goal.contributions ?? []).map((c) => ({ ...c, id: crypto.randomUUID() })),
           });
-          extras++;
+          goalCount++;
         }
       }
       if (Array.isArray(data.budgets)) {
         for (const budget of data.budgets) {
           await upsertBudget({ ...budget, id: crypto.randomUUID(), workspaceId: workspace.id });
-          extras++;
+          budgetCount++;
         }
       }
 
+      // Pendo Track Event: data imported from JSON file
+      if (typeof pendo !== "undefined") {
+        pendo.track("data_imported", {
+          imported_transaction_count: imported,
+          imported_goal_count: goalCount,
+          imported_budget_count: budgetCount,
+          total_records_imported: imported + goalCount + budgetCount,
+          import_success: true,
+        });
+      }
+
+      const extras = goalCount + budgetCount;
       toast.success(
         `Imported ${imported} transaction${imported !== 1 ? "s" : ""}${
           extras > 0 ? ` and ${extras} goal${extras !== 1 ? "s" : ""}/budget${extras !== 1 ? "s" : ""}` : ""

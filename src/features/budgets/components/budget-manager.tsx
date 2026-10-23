@@ -35,6 +35,16 @@ function BudgetRowForm({ category, currentLimit, currency, locale, onSave, onCle
     setIsSaving(true);
     try {
       await onSave(category.id, parsed);
+
+      // Pendo Track Event: monthly budget set or updated for a category
+      if (typeof pendo !== "undefined") {
+        pendo.track("budget_set", {
+          category_name: category.name,
+          monthly_limit: parsed,
+          is_new_budget: currentLimit === null,
+        });
+      }
+
       toast.success(`Budget set for ${category.name}`);
     } catch {
       toast.error("Failed to save budget");
