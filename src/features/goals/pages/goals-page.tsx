@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Target } from "lucide-react";
+import { Eye, EyeOff, Plus, Target } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/shared/components/app-layout";
 import { BpBox } from "@/shared/components/bp-box";
@@ -22,9 +22,12 @@ export function GoalsPage() {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [contributingGoal, setContributingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   const currency = workspace?.currency ?? "USD";
   const locale = workspace?.locale ?? "en-US";
+
+  const visibleGoals = hideCompleted ? goals.filter((goal) => !isGoalCompleted(goal)) : goals;
 
   async function handleAdd(values: GoalFormValues) {
     try {
@@ -89,10 +92,21 @@ export function GoalsPage() {
     <AppLayout
       title="Goals"
       actions={
-        <Button onClick={() => setShowForm(true)} size="sm">
-          <Plus data-icon="inline-start" />
-          New Goal
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-pressed={hideCompleted}
+            onClick={() => setHideCompleted((value) => !value)}
+          >
+            {hideCompleted ? <Eye data-icon="inline-start" /> : <EyeOff data-icon="inline-start" />}
+            {hideCompleted ? "Show completed" : "Hide completed"}
+          </Button>
+          <Button onClick={() => setShowForm(true)} size="sm">
+            <Plus data-icon="inline-start" />
+            New Goal
+          </Button>
+        </div>
       }
     >
       {isLoading ? (
@@ -120,7 +134,7 @@ export function GoalsPage() {
         </BpBox>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {goals.map((goal, idx) => (
+          {visibleGoals.map((goal, idx) => (
             <GoalCard
               key={goal.id}
               goal={goal}
@@ -162,4 +176,9 @@ export function GoalsPage() {
       />
     </AppLayout>
   );
+}
+
+function isGoalCompleted(goal: Goal): boolean {
+  const saved = goal.contributions.reduce((total, contribution) => total + contribution.amount, 0);
+  return saved >= goal.targetAmount;
 }
