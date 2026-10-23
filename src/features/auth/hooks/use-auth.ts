@@ -56,7 +56,6 @@ export function useAuth(): AuthState & AuthActions {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing: session hydration on mount
     loadSession();
   }, [loadSession]);
 
