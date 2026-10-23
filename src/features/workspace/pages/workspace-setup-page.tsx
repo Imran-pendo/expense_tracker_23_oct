@@ -24,6 +24,15 @@ export function WorkspaceSetupPage() {
       };
       await createWorkspace(workspace);
       await seedDefaultCategories(workspace.id);
+
+      // Pendo Track Event: workspace created during onboarding (step 2/2)
+      if (typeof pendo !== "undefined") {
+        pendo.track("workspace_setup_completed", {
+          currency: values.currency,
+          locale: values.locale,
+        });
+      }
+
       setActiveWorkspace(workspace);
       navigate("/", { replace: true });
     } catch (err) {

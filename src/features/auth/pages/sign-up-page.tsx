@@ -12,6 +12,15 @@ export function SignUpPage() {
   async function handleSignUp(values: SignUpFormValues) {
     try {
       await signUp(values.username, values.displayName, values.password);
+
+      // Pendo Track Event: confirmed account creation after DB persistence
+      if (typeof pendo !== "undefined") {
+        pendo.track("sign_up_completed", {
+          username_length: values.username.length,
+          display_name_word_count: values.displayName.trim().split(/\s+/).length,
+        });
+      }
+
       navigate("/setup-workspace", { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign up failed");
