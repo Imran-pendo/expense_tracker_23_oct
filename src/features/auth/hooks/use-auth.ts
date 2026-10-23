@@ -85,6 +85,16 @@ export function useAuth(): AuthState & AuthActions {
     setUser(newUser);
     const session: Session = { userId: newUser.id, workspaceId: "" };
     saveSession(session);
+
+    pendo.identify({
+      visitor: {
+        id: newUser.id,
+        full_name: newUser.displayName,
+        username: newUser.username,
+        avatarInitials: newUser.avatarInitials,
+        createdAt: newUser.createdAt,
+      },
+    });
   }, []);
 
   const signIn = useCallback(async (username: string, password: string) => {
@@ -104,12 +114,23 @@ export function useAuth(): AuthState & AuthActions {
       workspaceId: activeWorkspace?.id ?? "",
     };
     saveSession(session);
+
+    pendo.identify({
+      visitor: {
+        id: storedUser.id,
+        full_name: storedUser.displayName,
+        username: storedUser.username,
+        avatarInitials: storedUser.avatarInitials,
+        createdAt: storedUser.createdAt,
+      },
+    });
   }, []);
 
   const signOut = useCallback(() => {
     clearSession();
     setUser(null);
     setWorkspace(null);
+    pendo.clearSession();
   }, []);
 
   const setActiveWorkspace = useCallback((ws: Workspace) => {
